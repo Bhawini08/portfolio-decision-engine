@@ -75,3 +75,16 @@ streamlit run dashboard/app.py
 ```
 
 Synthetic mode provides deterministic CI. Live mode uses liquid ETF proxies for empirical validation.
+
+## What the repository produces
+
+Each rebalance creates an auditable chain from signal date to next-period return: signal ranks, expected returns, optimized weights, trades, estimated implementation cost, ex-ante volatility, realized gross and net return, and asset-level attribution. Generated outputs are written to `results/` and are intentionally reproducible rather than committed as static current-market results.
+
+## Validation
+
+Tests enforce signal timing, portfolio constraints, gross-to-net accounting, non-negative execution costs, and attribution reconciliation. GitHub Actions runs the full test suite and deterministic synthetic engine on every push and pull request.
+
+## Limitations
+
+Signals, expected-return mapping, and execution costs are stylized research assumptions. ETF closing prices do not reproduce institutional execution, and the engine should not be interpreted as evidence of deployable alpha without broader out-of-sample and implementation validation.
+
