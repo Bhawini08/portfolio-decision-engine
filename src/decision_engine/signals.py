@@ -3,10 +3,15 @@ import numpy as np
 import pandas as pd
 
 def _cross_sectional_z(x:pd.Series)->pd.Series:
-    sd=x.std()
+    valid=x.dropna()
+    if valid.empty:
+        return pd.Series(np.nan,index=x.index,dtype=float)
+    sd=valid.std()
     if not np.isfinite(sd) or sd<1e-12:
-        return pd.Series(0.0,index=x.index)
-    return (x-x.mean())/sd
+        out=pd.Series(np.nan,index=x.index,dtype=float)
+        out.loc[valid.index]=0.0
+        return out
+    return (x-valid.mean())/sd
 
 def monthly_signal_panel(prices:pd.DataFrame):
     m=prices.resample("ME").last()
@@ -18,7 +23,6 @@ def monthly_signal_panel(prices:pd.DataFrame):
 
     rows=[]
     for d in m.index:
-        if d not in mom_12_1.index: continue
         mom=_cross_sectional_z(mom_12_1.loc[d])
         trend=_cross_sectional_z(trend_6.loc[d])
         defensive=_cross_sectional_z(-vol_3.loc[d])
