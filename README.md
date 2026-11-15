@@ -1,90 +1,26 @@
 # Portfolio Decision Engine
 
-An end-to-end systematic investment research engine connecting signal formation, portfolio construction, execution assumptions, risk controls, realized performance, and attribution.
+A monthly ETF backtest that records why each trade happened and reconciles the resulting P&L back to asset contributions and estimated execution costs.
 
-The project is designed around one institutional question:
+## Results
 
-> A signal changed. Should the portfolio trade, by how much, at what expected cost, and what ultimately drove the resulting P&L?
+**The strategy improved Sharpe and reduced drawdown, but gave up its small gross return advantage after costs.** The historical market-data run used adjusted Yahoo Finance prices for SPY, QQQ, IWM, EFA, EEM, IEF, TLT, GLD, DBC and VNQ. Prices span January 2012–October 2026. The walk-forward evaluation spans **February 2014–October 2026** (153 months).
 
-## Pipeline
+| Portfolio | CAGR | Annualized volatility | Sharpe (zero risk-free rate) | Max drawdown |
+| --- | ---: | ---: | ---: | ---: |
+| Decision Engine, gross | 8.23% | 8.75% | 0.95 | -16.56% |
+| Decision Engine, net | 8.12% | 8.75% | 0.94 | -16.61% |
+| Equal weight, before costs | 8.21% | 10.47% | 0.81 | -21.05% |
 
-1. Raw market data
-2. Lagged signal formation
-3. Cross-sectional signal normalization
-4. Expected-return mapping
-5. Covariance estimation
-6. Constrained portfolio optimization
-7. Turnover and execution-cost model
-8. Risk-control audit
-9. Rebalance decision log
-10. Realized P&L and attribution
+Average two-way target turnover was **20.98% per month**. Modeled spread and impact lowered strategy CAGR by **10.94 basis points per year**. The equal-weight comparator is a frictionless monthly target-weight benchmark, and the code does not estimate its turnover or charge it trading costs. Strategy turnover measures changes in month-end target weights, not changes from drifted pre-trade holdings.
 
-## Default signals
+### From signal to P&L
 
-- 12-1 cross-sectional momentum
-- 6-month trend
-- inverse-volatility defensive signal
-
-Signals are formed exclusively from information available before the return they are evaluated against.
-
-## Portfolio controls
-
-- long-only
-- full investment
-- maximum asset weight
-- portfolio volatility ceiling
-- turnover ceiling
-- turnover penalty in the optimization objective
-- explicit transaction-cost drag
-
-## Execution assumptions
-
-The execution layer separates:
-
-- linear spread/slippage cost
-- nonlinear impact cost
-
-The assumptions are intentionally stylized and transparent. This is not an order-book simulator.
-
-## Outputs
-
-- strategy and benchmark returns
-- portfolio weights
-- signal history
-- trade blotter
-- expected execution costs
-- asset-level return contribution
-- turnover
-- risk diagnostics
-- drawdowns
-- decision log at every rebalance
-
-## Quick start
+The score combines 12–1 momentum, six-month trend and inverse-volatility ranks standardized across the ETF universe. The optimizer produces long-only target weights subject to concentration, volatility and turnover limits. Each month's signal is applied to the next month's return, and the trade log keeps estimated costs separate from gross asset contributions. CI checks signal timing and attribution reconciliation.
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
 pip install -r requirements.txt
-export PYTHONPATH=src
-
-pytest -q
-python scripts/run_engine.py --mode synthetic
-python scripts/run_engine.py --mode live
-
-streamlit run dashboard/app.py
+PYTHONPATH=src python scripts/run_engine.py --mode live
 ```
 
-Synthetic mode provides deterministic CI. Live mode uses liquid ETF proxies for empirical validation.
-
-## What the repository produces
-
-Each rebalance creates an auditable chain from signal date to next-period return: signal ranks, expected returns, optimized weights, trades, estimated implementation cost, ex-ante volatility, realized gross and net return, and asset-level attribution. Generated outputs are written to `results/` and are intentionally reproducible rather than committed as static current-market results.
-
-## Validation
-
-Tests enforce signal timing, portfolio constraints, gross-to-net accounting, non-negative execution costs, and attribution reconciliation. GitHub Actions runs the full test suite and deterministic synthetic engine on every push and pull request.
-
-## Limitations
-
-Signals, expected-return mapping, and execution costs are stylized research assumptions. ETF closing prices do not reproduce institutional execution, and the engine should not be interpreted as evidence of deployable alpha without broader out-of-sample and implementation validation.
-
+The dated snapshot uses completed months through October 2026. The live command fetches updated data, so its end date and figures may differ. To test the pipeline without a data download, use `--mode synthetic`.
